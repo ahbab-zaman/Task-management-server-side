@@ -18,6 +18,7 @@ const client = new MongoClient(uri, {
 });
 
 const tasksCollection = client.db("tasksDB").collection("tasks");
+const userCollection = client.db("tasksDB").collection("users");
 
 async function run() {
   try {
@@ -27,14 +28,16 @@ async function run() {
       "Pinged your deployment. You successfully connected to MongoDB!"
     );
 
-    app.post("/task", async (req, res) => {
+    app.post("/addTask", async (req, res) => {
       const query = req.body;
       const result = await tasksCollection.insertOne(query);
       res.send(result);
     });
 
-    app.get("/tasks", async (req, res) => {
-      const result = await tasksCollection.find().toArray();
+    app.get("/tasks/:email", async (req, res) => {
+      const email = req.params.email;
+      const query = { email: email };
+      const result = await tasksCollection.find(query).toArray();
       res.send(result);
     });
     app.put("/tasks/:id", async (req, res) => {
@@ -55,6 +58,17 @@ async function run() {
       const id = req.params.id;
       const cursor = { _id: new ObjectId(id) };
       const result = await tasksCollection.deleteOne(cursor);
+      res.send(result);
+    });
+
+    app.post("/addUser", async (req, res) => {
+      const user = req.body;
+      const query = { email: user?.email };
+      const existingUser = await userCollection.findOne(query);
+      if (existingUser) {
+        return res.send({ message: "User already Existed", insertedId: null });
+      }
+      const result = await userCollection.insertOne(user);
       res.send(result);
     });
   } finally {
